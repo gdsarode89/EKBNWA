@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engineer's Kitchen POS</title>
+    <style>
+        :root {
+            --primary: #28a745;
+            --secondary: #17a2b8;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --dark: #343a40;
+            --light: #f4f4f4;
+            --whatsapp: #25D366;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 10px; background: var(--light); color: #333; }
+        .hidden { display: none !important; }
+        
+        .container { 
+            max-width: 700px; 
+            margin: auto; 
+            background: #fff; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* WATERMARK STYLE */
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            opacity: 0.08; /* Very subtle */
+            pointer-events: none; /* Allows clicking through the image */
+            z-index: 0;
+        }
+
+        .content-wrap { position: relative; z-index: 1; }
+        
+        h2, h3 { border-bottom: 2px solid var(--light); padding-bottom: 10px; margin-top: 0; }
+
+        input, select, button { 
+            width: 100%; padding: 12px; margin: 8px 0; 
+            font-size: 16px; border: 1px solid #ddd; 
+            border-radius: 6px; box-sizing: border-box; 
+        }
+
+        button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        .btn-whatsapp { background: var(--whatsapp) !important; margin-top: 5px; }
+        .btn-edit { background: var(--warning); color: #000; width: auto; padding: 5px 10px; font-size: 13px; }
+        .btn-delete { background: var(--danger); color: white; width: auto; padding: 5px 10px; font-size: 13px; }
+
+        .menu-section { background: rgba(249, 249, 249, 0.8); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #eee; }
+        .search-box { background: #fffde7; border: 1px solid #fbc02d; font-weight: bold; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: rgba(255, 255, 255, 0.9); }
+        th, td { border: 1px solid #eee; padding: 12px; text-align: center; }
+        th { background: #f8f9fa; }
+
+        #total-display { font-size: 24px; font-weight: bold; color: var(--danger); text-align: right; margin: 10px 0; }
+
+        .history-section { margin-top: 30px; padding-top: 20px; border-top: 3px double #ddd; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <img src="https://i.postimg.cc/mD3m9X6z/Engineer-s-Kitchen-Logo.jpg" class="watermark" alt="Watermark">
+
+    <div class="content-wrap">
+        <div id="loginDiv">
+            <h2 align="center">Staff Login</h2>
+            <input id="user" placeholder="Username (admin)">
+            <input id="pass" type="password" placeholder="Password (1234)">
+            <select id="role">
+                <option value="owner">Owner</option>
+                <option value="employee">Employee</option>
+            </select>
+            <button onclick="login()">Enter System</button>
+        </div>
+
+        <div id="app" class="hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Billing</h2>
+                <button onclick="location.reload()" style="width: auto; background: #6c757d; font-size: 12px;">Logout</button>
+            </div>
+            
+            <input id="customer" placeholder="Customer Name">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button onclick="placeOrder()">✅ Save Order</button>
+                <button class="btn-whatsapp" onclick="sendWhatsApp()">📱 Share on WA</button>
+            </div>
+
+            <div class="menu-section">
+                <input type="text" id="menuSearch" class="search-box" placeholder="🔍 Search Item..." onkeyup="searchMenu()">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <select id="categorySelect" onchange="loadItems()"></select>
+                    <select id="itemSelect" onchange="loadSizes()"></select>
+                </div>
+                <select id="sizeSelect"></select>
+                <button onclick="addSelectedItem()" style="background: #007bff;">+ Add to Bill</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr><th>Item</th><th>Qty</th><th>Total</th><th>X</th></tr>
+                </thead>
+                <tbody id="bill"></tbody>
+            </table>
+            <div id="total-display">Total: ₹ <span id="total">0</span></div>
+
+            <div class="history-section">
+                <h3>Daily Sales</h3>
+                <input type="date" id="historyDateFilter" onchange="renderHistory()">
+                <div id="historyList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const menu = {
+        "Bowls": { "dark": {Small:89, Big:120}, "white": {Small:89, Big:120}, "milk": {Small:89, Big:120}, "fusion": {Small:110, Big:140}, "nutella": {Small:110, Big:140}, "Biscoff": {Small:110, Big:140}, "Seasonal": {Small:160, Big:220} },
+        "Pancakes": { "Classic": {"6":79, "9":99}, "Nutella": {"6":95, "9":115} },
+        "Brownie": { "plain": 80, "with icecream": 150, "nutella": 180, "Chocolate Dip": 100, "Biscoff Dip": 100 },
+        "Fondue": { "Dark Chocolate": 150, "Milk Chocolate": 150, "nutella": 200 },
+        "Drinks": { "cold coco": 90, "strawberry fizz": 50, "kiwi fizz": 50, "Orange": 50, "Pineapple": 50, "Passion fruit": 50, "Tigdam":50, "Jugalbandi":50, "Kalakhatta":50, "Tangy Peach":50 },
+        "Boba": { "Strawberry": 99, "Tangy Peach": 110, "Jugalbandi": 110, "Kiwi": 99, "Orange": 99, "Peach": 99, "Passion Fruit": 99, "Blueberry": 99, "Pineapple": 99 }
+    };
+
+    let billItems = [];
+    let currentTotal = 0;
+
+    function login(){
+        if(document.getElementById("user").value === "admin" && document.getElementById("pass").value === "1234"){
+            document.getElementById("loginDiv").classList.add("hidden");
+            document.getElementById("app").classList.remove("hidden");
+            document.getElementById("historyDateFilter").value = new Date().toISOString().split('T')[0];
+            renderCategories();
+            renderHistory();
+        } else { alert("Wrong Password"); }
+    }
+
+    function searchMenu() {
+        let input = document.getElementById("menuSearch").value.toLowerCase();
+        if(input.length < 2) return;
+        for (let cat in menu) {
+            for (let item in menu[cat]) {
+                if (item.toLowerCase().includes(input)) {
+                    document.getElementById("categorySelect").value = cat;
+                    loadItems();
+                    document.getElementById("itemSelect").value = item;
+                    loadSizes();
+                    return;
+                }
+            }
+        }
+    }
+
+    function renderCategories(){
+        let c = document.getElementById("categorySelect");
+        c.innerHTML = "<option value=''>Category</option>";
+        for(let cat in menu) c.innerHTML += `<option value="${cat}">${cat}</option>`;
+    }
+
+    function loadItems(){
+        let cat = document.getElementById("categorySelect").value;
+        let i = document.getElementById("itemSelect");
+        i.innerHTML = "<option value=''>Item</option>";
+        if(!cat) return;
+        for(let item in menu[cat]) i.innerHTML += `<option value="${item}">${item}</option>`;
+    }
+
+    function loadSizes(){
+        let cat = document.getElementById("categorySelect").value;
+        let item = document.getElementById("itemSelect").value;
+        let s = document.getElementById("sizeSelect");
+        s.innerHTML = "";
+        let opts = menu[cat][item];
+        if(typeof opts === "object") {
+            for(let sz in opts) s.innerHTML += `<option value="${sz}">${sz} - ₹${opts[sz]}</option>`;
+        } else { s.innerHTML = `<option value="standard">Standard - ₹${opts}</option>`; }
+    }
+
+    function addSelectedItem(){
+        let cat = document.getElementById("categorySelect").value;
+        let item = document.getElementById("itemSelect").value;
+        let size = document.getElementById("sizeSelect").value;
+        if(!item) return;
+
+        let price = (typeof menu[cat][item] === "object") ? menu[cat][item][size] : menu[cat][item];
+        let existing = billItems.find(i => i.name === item && i.size === size);
+
+        if(existing) { 
+            existing.qty++; 
+            existing.total = existing.qty * existing.price; 
+        } else { 
+            billItems.push({name:item, price, size: (size==="standard"?"":size), qty:1, total:price}); 
+        }
+        renderBill();
+    }
+
+    function renderBill(){
+        let html = ""; currentTotal = 0;
+        billItems.forEach((item, index)=>{
+            currentTotal += item.total;
+            html += `<tr><td>${item.name} <small>${item.size}</small></td><td>${item.qty}</td><td>${item.total}</td><td><button class="btn-delete" onclick="removeItem(${index})">x</button></td></tr>`;
+        });
+        document.getElementById("bill").innerHTML = html;
+        document.getElementById("total").innerText = currentTotal;
+    }
+
+    function removeItem(i){ billItems.splice(i,1); renderBill(); }
+
+    function placeOrder(){
+        let cust = document.getElementById("customer").value;
+        if(!cust || billItems.length === 0) return alert("Add customer name and items!");
+
+        let orders = JSON.parse(localStorage.getItem("orders")) || [];
+        orders.push({ 
+            id: Date.now(), customer: cust, items: [...billItems], total: currentTotal, 
+            date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString() 
+        });
+
+        localStorage.setItem("orders", JSON.stringify(orders));
+        alert("Saved!");
+        billItems = []; document.getElementById("customer").value = "";
+        renderBill(); renderHistory();
+    }
+
+    function sendWhatsApp() {
+        let cust = document.getElementById("customer").value || "Guest";
+        if (billItems.length === 0) return alert("Bill is empty!");
+
+        let text = `*ENGINEER'S KITCHEN BY NITISHA*%0A`;
+        text += `---------------------------%0A`;
+        text += `*Customer:* ${cust}%0A`;
+        text += `*Date:* ${new Date().toLocaleDateString()}%0A%0A`;
+        
+        billItems.forEach(item => {
+            text += `• ${item.name} (${item.size}) x ${item.qty} = ₹${item.total}%0A`;
+        });
+
+        text += `%0A*TOTAL AMOUNT: ₹${currentTotal}*%0A`;
+        text += `---------------------------%0A`;
+        text += `Thank you for ordering! 👨‍🍳`;
+
+        window.open(`https://wa.me/9076232373?text=${text}`, '_blank');
+    }
+
+    function renderHistory(){
+        const filterDate = new Date(document.getElementById("historyDateFilter").value).toLocaleDateString();
+        let orders = JSON.parse(localStorage.getItem("orders")) || [];
+        let filtered = orders.filter(o => o.date === filterDate);
+        let html = `<table><tr><th>Name</th><th>Amt</th><th>Time</th></tr>`;
+        filtered.reverse().forEach(o => {
+            html += `<tr><td>${o.customer}</td><td>₹${o.total}</td><td>${o.time}</td></tr>`;
+        });
+        document.getElementById("historyList").innerHTML = html + "</table>";
+    }
+</script>
+
+</body>
+</html>
