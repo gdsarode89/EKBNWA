@@ -3,271 +3,356 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Engineer's Kitchen POS</title>
+    <title>Premium Smart Order Kiosk</title>
     <style>
         :root {
-            --primary: #28a745;
-            --secondary: #17a2b8;
-            --danger: #dc3545;
-            --warning: #ffc107;
-            --dark: #343a40;
-            --light: #f4f4f4;
-            --whatsapp: #25D366;
+            --primary: #007bff;
+            --success: #28a745;
+            --dark: #212529;
+            --light: #f8f9fa;
+            --border: #e0e0e0;
+            --accent: #e7f1ff;
         }
 
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 10px; background: var(--light); color: #333; }
-        .hidden { display: none !important; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 15px; 
+            background: #f4f6f8; 
+            color: #333; 
+        }
+
+        .container { max-width: 900px; margin: auto; }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        h2 { margin: 0 0 10px 0; color: var(--dark); }
         
-        .container { 
-            max-width: 700px; 
-            margin: auto; 
-            background: #fff; 
-            padding: 20px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            position: relative;
-            overflow: hidden;
+        .cust-input { 
+            width: 100%; max-width: 400px; padding: 12px; 
+            font-size: 16px; border: 2px solid var(--border); 
+            border-radius: 8px; text-align: center; box-sizing: border-box;
+        }
+        .cust-input:focus { border-color: var(--primary); outline: none; }
+
+        /* Category Nav */
+        .category-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 10px; margin-bottom: 25px;
         }
 
-        /* WATERMARK STYLE */
-        .watermark {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            opacity: 0.08; /* Very subtle */
-            pointer-events: none; /* Allows clicking through the image */
-            z-index: 0;
+        .category-tile {
+            background: white; padding: 15px 10px; text-align: center;
+            font-weight: 600; border-radius: 10px; cursor: pointer;
+            border: 1px solid var(--border); transition: all 0.2s ease;
         }
 
-        .content-wrap { position: relative; z-index: 1; }
+        .category-tile:hover, .category-tile.active {
+            background: var(--primary); color: white; border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        /* Items Grid */
+        .items-section { display: none; }
+        .items-section.active { display: block; }
         
-        h2, h3 { border-bottom: 2px solid var(--light); padding-bottom: 10px; margin-top: 0; }
-
-        input, select, button { 
-            width: 100%; padding: 12px; margin: 8px 0; 
-            font-size: 16px; border: 1px solid #ddd; 
-            border-radius: 6px; box-sizing: border-box; 
+        .section-title {
+            font-size: 20px; color: var(--dark); margin: 15px 0;
+            padding-left: 8px; border-left: 4px solid var(--primary);
         }
 
-        button { background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; transition: 0.3s; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        .items-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px; margin-bottom: 30px;
+        }
+
+        .item-tile {
+            background: white; border-radius: 12px; border: 1px solid var(--border);
+            padding: 15px; display: flex; flex-direction: column;
+            justify-content: space-between; box-shadow: 0 3px 8px rgba(0,0,0,0.04);
+            transition: transform 0.2s;
+        }
+        .item-tile:hover { transform: translateY(-3px); }
+        .item-name { font-weight: 600; font-size: 16px; text-transform: capitalize; margin-bottom: 10px; }
+
+        /* Size Selector Component */
+        .size-container { display: flex; gap: 5px; margin-bottom: 15px; flex-wrap: wrap; }
+        .size-pill {
+            flex: 1; text-align: center; padding: 6px 4px; font-size: 12px;
+            font-weight: 600; background: var(--light); border: 1px solid var(--border);
+            border-radius: 6px; cursor: pointer;
+        }
+        .size-pill.selected { background: var(--accent); border-color: var(--primary); color: var(--primary); }
+
+        .price-tag { font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 10px; }
+        .btn-add-tile {
+            background: var(--dark); color: white; border: none; padding: 10px;
+            border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%;
+        }
+        .btn-add-tile:hover { background: var(--primary); }
+
+        /* Checkout Panel Options */
+        .cart-panel {
+            background: white; padding: 20px; border-radius: 12px;
+            margin-top: 30px; box-shadow: 0 -4px 20px rgba(0,0,0,0.05); border: 1px solid var(--border);
+        }
+
+        .cart-table { width: 100%; border-collapse: collapse; }
+        .cart-table th, .cart-table td { padding: 10px; text-align: left; border-bottom: 1px solid var(--light); }
+        .cart-table th:last-child, .cart-table td:last-child { text-align: right; }
         
-        .btn-whatsapp { background: var(--whatsapp) !important; margin-top: 5px; }
-        .btn-edit { background: var(--warning); color: #000; width: auto; padding: 5px 10px; font-size: 13px; }
-        .btn-delete { background: var(--danger); color: white; width: auto; padding: 5px 10px; font-size: 13px; }
+        .qty-btn { width: 28px; height: 28px; background: var(--light); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; }
+        
+        /* Payment Selection Blocks */
+        .payment-box { margin: 20px 0; }
+        .payment-methods { display: flex; gap: 15px; margin-top: 8px; }
+        .pay-label {
+            flex: 1; background: var(--light); border: 2px solid var(--border);
+            padding: 12px; border-radius: 8px; text-align: center; cursor: pointer;
+            font-weight: 600; display: block;
+        }
+        input[type="radio"] { display: none; }
+        input[type="radio"]:checked + .pay-label {
+            border-color: var(--success); background: #eafaf1; color: var(--success);
+        }
 
-        .menu-section { background: rgba(249, 249, 249, 0.8); padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #eee; }
-        .search-box { background: #fffde7; border: 1px solid #fbc02d; font-weight: bold; }
+        .total-container {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 22px; font-weight: bold; margin: 20px 0 10px 0; color: var(--success);
+        }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: rgba(255, 255, 255, 0.9); }
-        th, td { border: 1px solid #eee; padding: 12px; text-align: center; }
-        th { background: #f8f9fa; }
-
-        #total-display { font-size: 24px; font-weight: bold; color: var(--danger); text-align: right; margin: 10px 0; }
-
-        .history-section { margin-top: 30px; padding-top: 20px; border-top: 3px double #ddd; }
+        .btn-checkout {
+            background: var(--success); color: white; border: none; width: 100%;
+            padding: 15px; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <img src="https://i.postimg.cc/mD3m9X6z/Engineer-s-Kitchen-Logo.jpg" class="watermark" alt="Watermark">
+    <header>
+        <h2>Self-Ordering Kiosk 👋</h2>
+        <input type="text" id="custName" class="cust-input" placeholder="Enter Name or Table Number">
+    </header>
 
-    <div class="content-wrap">
-        <div id="loginDiv">
-            <h2 align="center">Staff Login</h2>
-            <input id="user" placeholder="Username (admin)">
-            <input id="pass" type="password" placeholder="Password (1234)">
-            <select id="role">
-                <option value="owner">Owner</option>
-                <option value="employee">Employee</option>
-            </select>
-            <button onclick="login()">Enter System</button>
-        </div>
+    <div class="category-grid" id="category-nav"></div>
+    <div id="menu-sections-container"></div>
 
-        <div id="app" class="hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>Billing</h2>
-                <button onclick="location.reload()" style="width: auto; background: #6c757d; font-size: 12px;">Logout</button>
-            </div>
-            
-            <input id="customer" placeholder="Customer Name">
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button onclick="placeOrder()">✅ Save Order</button>
-                <button class="btn-whatsapp" onclick="sendWhatsApp()">📱 Share on WA</button>
-            </div>
+    <div class="cart-panel">
+        <h3 style="margin-top: 0; border-bottom: 2px solid var(--light); padding-bottom: 10px;">🛒 Selected Basket</h3>
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th>Item details</th>
+                    <th>Quantity</th>
+                    <th style="text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody id="cart-items">
+                <tr><td colspan="3" style="text-align: center; color: gray; padding: 20px;">Your basket is empty. Add items from above!</td></tr>
+            </tbody>
+        </table>
 
-            <div class="menu-section">
-                <input type="text" id="menuSearch" class="search-box" placeholder="🔍 Search Item..." onkeyup="searchMenu()">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <select id="categorySelect" onchange="loadItems()"></select>
-                    <select id="itemSelect" onchange="loadSizes()"></select>
-                </div>
-                <select id="sizeSelect"></select>
-                <button onclick="addSelectedItem()" style="background: #007bff;">+ Add to Bill</button>
-            </div>
+        <div class="payment-box">
+            <span style="font-weight: bold; color: var(--dark);">Select Payment Mode:</span>
+            <div class="payment-methods">
+                <input type="radio" id="pay-cash" name="payMode" value="Cash" checked>
+                <label for="pay-cash" class="pay-label">💵 Pay with Cash</label>
 
-            <table>
-                <thead>
-                    <tr><th>Item</th><th>Qty</th><th>Total</th><th>X</th></tr>
-                </thead>
-                <tbody id="bill"></tbody>
-            </table>
-            <div id="total-display">Total: ₹ <span id="total">0</span></div>
-
-            <div class="history-section">
-                <h3>Daily Sales</h3>
-                <input type="date" id="historyDateFilter" onchange="renderHistory()">
-                <div id="historyList"></div>
+                <input type="radio" id="pay-upi" name="payMode" value="UPI">
+                <label for="pay-upi" class="pay-label">📱 Pay via UPI (Google Pay)</label>
             </div>
         </div>
+
+        <div class="total-container">
+            <span>Basket Total:</span>
+            <span>₹<span id="cart-total">0</span></span>
+        </div>
+        <button class="btn-checkout" onclick="handleCheckout()">Complete & Send Order</button>
     </div>
 </div>
 
 <script>
     const menu = {
-        "Bowls": { "dark": {Small:89, Big:120}, "white": {Small:89, Big:120}, "milk": {Small:89, Big:120}, "fusion": {Small:110, Big:140}, "nutella": {Small:110, Big:140}, "Biscoff": {Small:110, Big:140}, "Seasonal": {Small:160, Big:220} },
+        "Bowls": {
+            "dark": {Small:89, Big:120}, "white": {Small:89, Big:120}, "milk": {Small:89, Big:120},
+            "fusion": {Small:110, Big:140}, "nutella": {Small:110, Big:140}, "Biscoff": {Small:110, Big:140}, "Seasonal": {Small:160, Big:220}
+        },
         "Pancakes": { "Classic": {"6":79, "9":99}, "Nutella": {"6":95, "9":115} },
         "Brownie": { "plain": 80, "with icecream": 150, "nutella": 180, "Chocolate Dip": 100, "Biscoff Dip": 100 },
         "Fondue": { "Dark Chocolate": 150, "Milk Chocolate": 150, "nutella": 200 },
-        "Drinks": { "cold coco": 90, "strawberry fizz": 50, "kiwi fizz": 50, "Orange": 50, "Pineapple": 50, "Passion fruit": 50, "Tigdam":50, "Jugalbandi":50, "Kalakhatta":50, "Tangy Peach":50 },
-        "Boba": { "Strawberry": 99, "Tangy Peach": 110, "Jugalbandi": 110, "Kiwi": 99, "Orange": 99, "Peach": 99, "Passion Fruit": 99, "Blueberry": 99, "Pineapple": 99 }
+        "Fizz": { 
+            "Tropical Sunset": 60, "Blue Sea": 60, "Peach Passion": 60, "Kiwi Mint": 60, 
+            "Kala Khatta Twist": 60, "Mango Berry": 60, "Pine Blue Breeze": 60, 
+            "Passion Berry Splash": 60, "Minty Mango": 60, "strawberry fizz": 50, 
+            "kiwi fizz": 50, "Orange": 50, "Pineapple": 50, "Passion fruit": 50, 
+            "Tigdam": 50, "Jugalbandi": 50, "Kalakhatta": 50, "Tangy Peach": 50, "cold coco": 90 
+        },
+        "Boba": { 
+            "Tropical Sunset": 110, "Blue Sea": 110, "Peach Passion": 110, "Kiwi Mint": 110, 
+            "Kala Khatta Twist": 110, "Mango Berry": 110, "Pine Blue Breeze": 110, 
+            "Passion Berry Splash": 110, "Minty Mango": 110, "Strawberry": 99, 
+            "Tangy Peach": 110, "Jugalbandi": 110, "Kiwi": 99, "Orange": 99, 
+            "Peach": 99, "Passion Fruit": 99, "Blueberry": 99, "Pineapple": 99 
+        },
+        "Add-ons": { "Extra Ice Cream": 20 }
     };
 
-    let billItems = [];
-    let currentTotal = 0;
+    let cart = [];
+    const targetMobile = "9076232373";
+    const merchantUpi = "gdsarode89@hdfcbank";
 
-    function login(){
-        if(document.getElementById("user").value === "admin" && document.getElementById("pass").value === "1234"){
-            document.getElementById("loginDiv").classList.add("hidden");
-            document.getElementById("app").classList.remove("hidden");
-            document.getElementById("historyDateFilter").value = new Date().toISOString().split('T')[0];
-            renderCategories();
-            renderHistory();
-        } else { alert("Wrong Password"); }
-    }
+    function buildTileMenu() {
+        const navContainer = document.getElementById("category-nav");
+        const sectionsContainer = document.getElementById("menu-sections-container");
+        let navHtml = "", sectionsHtml = "", isFirst = true;
 
-    function searchMenu() {
-        let input = document.getElementById("menuSearch").value.toLowerCase();
-        if(input.length < 2) return;
-        for (let cat in menu) {
-            for (let item in menu[cat]) {
-                if (item.toLowerCase().includes(input)) {
-                    document.getElementById("categorySelect").value = cat;
-                    loadItems();
-                    document.getElementById("itemSelect").value = item;
-                    loadSizes();
-                    return;
+        for (let category in menu) {
+            let cleanCatId = category.replace(/\s+/g, '');
+            navHtml += `<div class="category-tile ${isFirst ? 'active' : ''}" id="nav-${cleanCatId}" onclick="switchCategory('${cleanCatId}')">${category}</div>`;
+            sectionsHtml += `<div class="items-section ${isFirst ? 'active' : ''}" id="sec-${cleanCatId}"><div class="section-title">${category}</div><div class="items-grid">`;
+
+            for (let item in menu[category]) {
+                let options = menu[category][item];
+                let cleanItemId = (cleanCatId + "-" + item).replace(/\s+/g, '');
+                sectionsHtml += `<div class="item-tile"><div class="item-name">${item}</div>`;
+                
+                if (typeof options === "object") {
+                    sectionsHtml += `<div class="size-container">`;
+                    let sizeKeys = Object.keys(options);
+                    sizeKeys.forEach((sz, idx) => {
+                        sectionsHtml += `<div class="size-pill ${idx === 0 ? 'selected' : ''}" id="pill-${cleanItemId}-${sz}" onclick="selectSizePill('${cleanItemId}', '${sz}', ${options[sz]})">${sz}</div>`;
+                    });
+                    sectionsHtml += `</div><div class="price-tag" id="price-${cleanItemId}">₹${options[sizeKeys[0]]}</div><input type="hidden" id="val-${cleanItemId}" value="${sizeKeys[0]}">`;
+                } else {
+                    sectionsHtml += `<div></div><div class="price-tag">₹${options}</div><input type="hidden" id="val-${cleanItemId}" value="standard">`;
                 }
+                sectionsHtml += `<button class="btn-add-tile" onclick="addItemToCart('${category}', '${item}', '${cleanItemId}')">+ Add to Cart</button></div>`;
             }
+            sectionsHtml += `</div></div>`;
+            isFirst = false;
+        }
+        navContainer.innerHTML = navHtml;
+        sectionsContainer.innerHTML = sectionsHtml;
+    }
+
+    function switchCategory(catId) {
+        document.querySelectorAll('.category-tile').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.items-section').forEach(el => el.classList.remove('active'));
+        document.getElementById(`nav-${catId}`).classList.add('active');
+        document.getElementById(`sec-${catId}`).classList.add('active');
+    }
+
+    function selectSizePill(itemId, selectedSize, price) {
+        document.querySelectorAll(`[id^="pill-${itemId}-"]`).forEach(el => el.classList.remove('selected'));
+        document.getElementById(`pill-${itemId}-${selectedSize}`).classList.add('selected');
+        document.getElementById(`price-${itemId}`).innerText = `₹${price}`;
+        document.getElementById(`val-${itemId}`).value = selectedSize;
+    }
+
+    function addItemToCart(category, item, itemId) {
+        let chosenSize = document.getElementById(`val-${itemId}`).value;
+        let finalSizeString = (chosenSize === "standard") ? "" : chosenSize;
+        let price = (typeof menu[category][item] === "object") ? menu[category][item][chosenSize] : menu[category][item];
+
+        let existingItem = cart.find(i => i.name === item && i.size === finalSizeString);
+        if (existingItem) {
+            existingItem.qty++;
+            existingItem.total = existingItem.qty * existingItem.price;
+        } else {
+            cart.push({ name: item, price: price, size: finalSizeString, qty: 1, total: price });
+        }
+        updateCartUi();
+    }
+
+    function adjustQty(index, offset) {
+        cart[index].qty += offset;
+        if (cart[index].qty <= 0) { cart.splice(index, 1); } 
+        else { cart[index].total = cart[index].qty * cart[index].price; }
+        updateCartUi();
+    }
+
+    function updateCartUi() {
+        const cartBody = document.getElementById("cart-items");
+        const totalOutput = document.getElementById("cart-total");
+        if (cart.length === 0) {
+            cartBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: gray; padding: 20px;">Your basket is empty. Add items from above!</td></tr>`;
+            totalOutput.innerText = "0";
+            return;
+        }
+        let html = "", runningSum = 0;
+        cart.forEach((item, index) => {
+            runningSum += item.total;
+            html += `<tr><td><span style="font-weight:600;">${item.name}</span> ${item.size ? `[${item.size}]` : ''}<br><small style="color:gray;">₹${item.price}</small></td>
+                <td><button class="qty-btn" onclick="adjustQty(${index}, -1)">-</button><span style="margin:0 8px; font-weight:600;">${item.qty}</span><button class="qty-btn" onclick="adjustQty(${index}, 1)">+</button></td>
+                <td style="font-weight:600;">₹${item.total}</td></tr>`;
+        });
+        cartBody.innerHTML = html;
+        totalOutput.innerText = runningSum;
+    }
+
+    // --- STRATEGIC PAYMENT AND WHATSAPP HANDLING ROUTINE ---
+    function handleCheckout() {
+        let customer = document.getElementById("custName").value.trim();
+        if (!customer) return alert("Please type your Name or Table Number before checking out!");
+        if (cart.length === 0) return alert("Your basket is empty!");
+
+        let selectedMethod = document.querySelector('input[name="payMode"]:checked').value;
+        let sumTotal = cart.reduce((acc, item) => acc + item.total, 0);
+
+        // Construct Text Payload Message for Store Owner
+        let message = `*✨ NEW KIOSK ORDER ✨*\n`;
+        message += `-------------------------\n`;
+        message += `👤 *Customer/Table:* ${customer}\n`;
+        message += `💳 *Payment Mode:* ${selectedMethod}\n`;
+        message += `-------------------------\n`;
+        cart.forEach(item => {
+            message += `▪️ ${item.qty} x ${item.name} ${item.size ? `(${item.size})` : ''} -> *₹${item.total}*\n`;
+        });
+        message += `-------------------------\n`;
+        message += `💰 *Total Amount Payable: ₹${sumTotal}*\n`;
+
+        let encodedText = encodeURIComponent(message);
+        let whatsappUrl = `https://wa.me/91${targetMobile}?text=${encodedText}`;
+
+        if (selectedMethod === "UPI") {
+            // Standard Interoperable UPI Deep Linking URI Scheme Architecture
+            let upiUrl = `upi://pay?pa=${merchantUpi}&pn=Store_Kiosk&am=${sumTotal}&cu=INR&tn=Order_Ref_${customer.replace(/\s+/g, '_')}`;
+            
+            alert("Redirecting to your Mobile UPI Apps (Google Pay) for quick payment confirmation...");
+            
+            // Initiate App Switching
+            window.location.href = upiUrl;
+
+            // Delayed fallback logic: give the user a moment to complete payment, then offer WhatsApp transmission
+            setTimeout(() => {
+                if (confirm("Once payment is completed, press OK to submit your order summary via WhatsApp.")) {
+                    window.location.href = whatsappUrl;
+                    clearKioskForm();
+                }
+            }, 2500);
+        } else {
+            // Cash Method
+            alert("Order verified for Cash Settlement. Opening WhatsApp to pass details to the counter.");
+            window.location.href = whatsappUrl;
+            clearKioskForm();
         }
     }
 
-    function renderCategories(){
-        let c = document.getElementById("categorySelect");
-        c.innerHTML = "<option value=''>Category</option>";
-        for(let cat in menu) c.innerHTML += `<option value="${cat}">${cat}</option>`;
+    function clearKioskForm() {
+        cart = [];
+        document.getElementById("custName").value = "";
+        updateCartUi();
     }
 
-    function loadItems(){
-        let cat = document.getElementById("categorySelect").value;
-        let i = document.getElementById("itemSelect");
-        i.innerHTML = "<option value=''>Item</option>";
-        if(!cat) return;
-        for(let item in menu[cat]) i.innerHTML += `<option value="${item}">${item}</option>`;
-    }
-
-    function loadSizes(){
-        let cat = document.getElementById("categorySelect").value;
-        let item = document.getElementById("itemSelect").value;
-        let s = document.getElementById("sizeSelect");
-        s.innerHTML = "";
-        let opts = menu[cat][item];
-        if(typeof opts === "object") {
-            for(let sz in opts) s.innerHTML += `<option value="${sz}">${sz} - ₹${opts[sz]}</option>`;
-        } else { s.innerHTML = `<option value="standard">Standard - ₹${opts}</option>`; }
-    }
-
-    function addSelectedItem(){
-        let cat = document.getElementById("categorySelect").value;
-        let item = document.getElementById("itemSelect").value;
-        let size = document.getElementById("sizeSelect").value;
-        if(!item) return;
-
-        let price = (typeof menu[cat][item] === "object") ? menu[cat][item][size] : menu[cat][item];
-        let existing = billItems.find(i => i.name === item && i.size === size);
-
-        if(existing) { 
-            existing.qty++; 
-            existing.total = existing.qty * existing.price; 
-        } else { 
-            billItems.push({name:item, price, size: (size==="standard"?"":size), qty:1, total:price}); 
-        }
-        renderBill();
-    }
-
-    function renderBill(){
-        let html = ""; currentTotal = 0;
-        billItems.forEach((item, index)=>{
-            currentTotal += item.total;
-            html += `<tr><td>${item.name} <small>${item.size}</small></td><td>${item.qty}</td><td>${item.total}</td><td><button class="btn-delete" onclick="removeItem(${index})">x</button></td></tr>`;
-        });
-        document.getElementById("bill").innerHTML = html;
-        document.getElementById("total").innerText = currentTotal;
-    }
-
-    function removeItem(i){ billItems.splice(i,1); renderBill(); }
-
-    function placeOrder(){
-        let cust = document.getElementById("customer").value;
-        if(!cust || billItems.length === 0) return alert("Add customer name and items!");
-
-        let orders = JSON.parse(localStorage.getItem("orders")) || [];
-        orders.push({ 
-            id: Date.now(), customer: cust, items: [...billItems], total: currentTotal, 
-            date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString() 
-        });
-
-        localStorage.setItem("orders", JSON.stringify(orders));
-        alert("Saved!");
-        billItems = []; document.getElementById("customer").value = "";
-        renderBill(); renderHistory();
-    }
-
-    function sendWhatsApp() {
-        let cust = document.getElementById("customer").value || "Guest";
-        if (billItems.length === 0) return alert("Bill is empty!");
-
-        let text = `*ENGINEER'S KITCHEN BY NITISHA*%0A`;
-        text += `---------------------------%0A`;
-        text += `*Customer:* ${cust}%0A`;
-        text += `*Date:* ${new Date().toLocaleDateString()}%0A%0A`;
-        
-        billItems.forEach(item => {
-            text += `• ${item.name} (${item.size}) x ${item.qty} = ₹${item.total}%0A`;
-        });
-
-        text += `%0A*TOTAL AMOUNT: ₹${currentTotal}*%0A`;
-        text += `---------------------------%0A`;
-        text += `Thank you for ordering! 👨‍🍳`;
-
-        window.open(`https://wa.me/8976891011?text=${text}`, '_blank');
-    }
-
-    function renderHistory(){
-        const filterDate = new Date(document.getElementById("historyDateFilter").value).toLocaleDateString();
-        let orders = JSON.parse(localStorage.getItem("orders")) || [];
-        let filtered = orders.filter(o => o.date === filterDate);
-        let html = `<table><tr><th>Name</th><th>Amt</th><th>Time</th></tr>`;
-        filtered.reverse().forEach(o => {
-            html += `<tr><td>${o.customer}</td><td>₹${o.total}</td><td>${o.time}</td></tr>`;
-        });
-        document.getElementById("historyList").innerHTML = html + "</table>";
-    }
+    buildTileMenu();
 </script>
-
 </body>
 </html>
